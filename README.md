@@ -1,98 +1,122 @@
-# Adhan Timing and Display System
+# 🕌 Adhan Timing and Display System
 
 ## Overview
 
-This project is an Adhan Timing and Display System designed using an Arduino, an RTC module, WiFi connectivity, and an LED matrix. The system fetches daily prayer times from an online API and displays the current time on an LED matrix. At specified prayer times (Adhan), it plays an MP3 file and blinks the LED matrix display.
+This project is an **Adhan Timing and Display System** powered by an **ESP32** microcontroller. It combines:
 
-## Hardware Requirements
+- Accurate timekeeping via **DS3231 RTC** and **NTP**
+- Automatic fetching of daily prayer times via **AlAdhan API**
+- **LED matrix display** for time visualization
+- **MP3 Adhan playback** through **I2S audio output**
+- Offline operation once initial sync is done
 
-- Arduino board (e.g., ESP32)
-- RTC module (e.g., DS3231)
-- SD card module
-- LED matrix display
-- Audio components (I2S compatible)
-- WiFi connectivity
-- SD card with MP3 file
+Ideal for use in mosques, homes, or embedded Islamic applications.
 
-## Software Requirements
+---
 
-- Arduino IDE
-- Libraries:
-  - `RTClib`
-  - `WiFi`
-  - `HTTPClient`
-  - `ArduinoJson`
-  - `LedController`
-  - `AudioFileSourceSD`
-  - `AudioGeneratorMP3`
-  - `AudioOutputI2S`
+## 🧰 Hardware Requirements
 
-## Installation
+- **ESP32 Development Board**
+- **DS3231 RTC Module**
+- **MAX7219 8x8 LED Matrix Display**
+- **MicroSD Card Module + MicroSD card** (FAT32 formatted)
+- **Speaker + I2S amplifier (e.g. MAX98357A)**
+- **Jumper wires / Breadboard**
+- **Power supply** (USB or battery)
 
-1. **Install Required Libraries**:
-   - Open Arduino IDE: `Sketch -> Include Library -> Manage Libraries`
-   - Install libraries listed above.
-2. **Set Up Hardware**:
-   - Connect the RTC, SD card module, LED matrix, and audio components to the Arduino.
-3. **Prepare SD Card**:
-   - Copy `a1.mp3` to the SD card's root directory.
+---
 
-## Configuration
+## 💻 Software Requirements
 
-1. **WiFi Configuration**:
-   - Open the sketch and enter your WiFi credentials:
-     ```cpp
-     const char* ssid = "your_SSID";
-     const char* password = "your_PASSWORD";
-     ```
+- **Arduino IDE** with ESP32 board support
+- Required Libraries:
+  - `RTClib` – for RTC access
+  - `WiFi` – for internet connectivity
+  - `HTTPClient` – for API requests
+  - `ArduinoJson` – for parsing prayer time data
+  - `LedController` – for MAX7219 LED control
+  - `AudioFileSourceSD`, `AudioGeneratorMP3`, `AudioOutputI2S` – for MP3 playback via I2S
 
-## Usage
+---
 
-1. **Upload the Code**:
-   - Connect Arduino, open the sketch, select the board and port, and upload.
-2. **Run the System**:
-   - Connects to WiFi and fetches prayer times.
-   - Displays current time on LED matrix.
-   - Plays Adhan MP3 and blinks LED matrix at prayer times.
+## 🔌 Wiring
 
-## Code Overview
+| Component      | ESP32 Pin        |
+|----------------|------------------|
+| **DS3231 RTC** | SDA → GPIO 21<br>SCL → GPIO 22 |
+| **SD Module**  | CS → GPIO 5<br>MOSI → GPIO 23<br>MISO → GPIO 19<br>SCK → GPIO 18 |
+| **LED Matrix** | DIN → GPIO 13<br>CLK → GPIO 14<br>CS → GPIO 15 |
+| **Speaker (I2S)** | LRC → GPIO 2<br>BCLK → GPIO 3<br>DOUT → GPIO 4 |
 
-### Main Loop
+_Note: Adjust pins in code if using different GPIOs._
 
-1. **Date Change Check**:
-   - The system checks if the date has changed since the last API fetch. If so, it fetches new prayer times for the current date.
+---
 
-2. **Display Current Time**:
-   - The current time is continuously displayed on the LED matrix.
+## 🗂️ Setup Instructions
 
-3. **Adhan Time Check**:
-   - The system checks if the current time matches any of the fetched prayer times. If a match is found:
-     - The LED matrix blinks.
-     - The Adhan MP3 file is played.
+### 1. Library Installation
 
-### Function Details
+Open Arduino IDE, then:
 
-- `setup()`: Initializes the system, sets up the RTC, connects to WiFi, and initializes the SD card and audio components.
-- `loop()`: Continuously checks the current time, fetches new prayer times if the date changes, checks for Adhan times, and updates the LED matrix display.
-- `printTime(DateTime now)`: Prints the current time to the serial monitor.
-- `connectWiFi()`: Connects the system to the WiFi network.
-- `fetchTimings(String date)`: Fetches prayer timings from the API based on the given date.
-- `timeToMinutes(const char* timeStr)`: Converts a time string to minutes.
-- `checkAdhanTimings()`: Checks if it's time for a prayer call (Adhan).
-- `displayCurrentTime(DateTime now)`: Displays the current time on the LED matrix.
-- `blinkDisplay()`: Blinks the LED matrix display.
-- `playAdhan()`: Plays the Adhan MP3.
-- `loadfile()`: Loads the MP3 file.
+1. Go to **Sketch → Include Library → Manage Libraries**
+2. Install the following:
+   - `RTClib`
+   - `WiFi`
+   - `HTTPClient`
+   - `ArduinoJson`
+   - `LedController`
+   - `ESP8266Audio` (includes `AudioGeneratorMP3`, etc.)
+
+### 2. Prepare SD Card
+
+- Format the SD card as **FAT32**
+- Place your Adhan file in root directory as `a1.mp3`
+
+### 3. Configure WiFi and Location
+
+Edit in your Arduino sketch:
+
+```cpp
+const char* ssid = "Your_SSID";
+const char* password = "Your_PASSWORD";
+
+String city = "New York";
+String country = "USA";
+
+const long gmtOffset_sec = -18000;
+const int daylightOffset_sec = 3600;
+
+## 🚀 How It Works
+
+### On Startup:
+- Connects to WiFi  
+- Syncs time using NTP  
+- Fetches prayer times from **AlAdhan API**  
+- Stores them in memory for the day  
+- Disconnects WiFi to save power  
+
+### During Operation:
+- Continuously displays time on LED matrix  
+- Compares current time with prayer schedule  
+- When a prayer time matches:
+  - 🔁 Blinks LED display  
+  - 🔊 Plays Adhan from SD card  
+
+---
+
+## 🧠 Core Functions
+
+| Function               | Purpose                                      |
+|------------------------|----------------------------------------------|
+| `connectWiFi()`        | Connects ESP32 to local WiFi                 |
+| `syncTime()`           | Syncs time using NTP and updates RTC         |
+| `fetchTimings(date)`   | Fetches prayer times from AlAdhan API        |
+| `timeToMinutes("HH:MM")` | Converts time string to minutes            |
+| `handleAdhanTimings()` | Checks for Adhan time and triggers playback  |
+| `playAdhan()`          | Plays Adhan MP3 via I2S                      |
+| `displayCurrentTime()` | Displays the time on LED matrix              |
+| `blinkDisplay()`       | Makes matrix blink during Adhan              |
 
 ## License
 
 This project is licensed under the MIT License.
-
----
-
-## Troubleshooting
-
-- **WiFi Issues**: Check SSID/password and network availability.
-- **RTC Issues**: Ensure RTC module is connected and library is installed.
-- **Audio Issues**: Check audio component connections and MP3 file location.
-
